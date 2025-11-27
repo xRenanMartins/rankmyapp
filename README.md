@@ -264,15 +264,101 @@ Healthcheck simples.
 
 ## 📊 Diagrama de Arquitetura
 
-O diagrama de arquitetura está disponível em `architecture.mmd` (formato Mermaid).
+```mermaid
+graph TB
+    subgraph "External Services"
+        LB[Load Balancer]
+        MS1[Microservice 1]
+        MS2[Microservice 2]
+    end
+
+    subgraph "API Layer - Adapters/HTTP"
+        API[FastAPI Application]
+        R1[POST /orders]
+        R2[GET /orders/:id]
+        R3[PATCH /orders/:id/status]
+        R4[GET /health]
+    end
+
+    subgraph "Application Layer - Use Cases"
+        UC1[CreateOrderUseCase]
+        UC2[GetOrderUseCase]
+        UC3[UpdateOrderStatusUseCase]
+    end
+
+    subgraph "Domain Layer - Core Business Logic"
+        E1[Order Entity]
+        VO1[OrderId]
+        VO2[Money]
+        VO3[OrderStatus]
+        DS[Domain Services]
+    end
+
+    subgraph "Ports - Interfaces"
+        RP[OrderRepositoryPort]
+        MP[MessageBrokerPort]
+    end
+
+    subgraph "Adapters - Infrastructure"
+        MR[MongoOrderRepository]
+        RB[RabbitMQPublisher]
+    end
+
+    subgraph "Data & Messaging"
+        MONGO[(MongoDB)]
+        RMQ[RabbitMQ Exchange]
+        QUEUE[order.status_updated Queue]
+    end
+
+    LB --> API
+    MS1 -.->|Consume Events| RMQ
+    MS2 -.->|Consume Events| RMQ
+
+    API --> R1
+    API --> R2
+    API --> R3
+    API --> R4
+
+    R1 --> UC1
+    R2 --> UC2
+    R3 --> UC3
+
+    UC1 --> E1
+    UC2 --> E1
+    UC3 --> E1
+
+    E1 --> VO1
+    E1 --> VO2
+    E1 --> VO3
+    E1 --> DS
+
+    UC1 --> RP
+    UC2 --> RP
+    UC3 --> RP
+    UC3 --> MP
+
+    RP -.->|implements| MR
+    MP -.->|implements| RB
+
+    MR --> MONGO
+    RB --> RMQ
+    RMQ --> QUEUE
+
+    style API fill:#4A90E2
+    style E1 fill:#50C878
+    style RP fill:#FFD700
+    style MP fill:#FFD700
+    style MR fill:#FF6B6B
+    style RB fill:#FF6B6B
+    style MONGO fill:#47A248
+    style RMQ fill:#FF6600
+```
 
 ### Explicação do Diagrama
 
-O diagrama representa a arquitetura hexagonal do serviço. A **API Layer** (FastAPI) recebe requisições HTTP e delega para a **Application Layer** (Use Cases), que orquestra operações. O **Domain Layer** contém as entidades e regras de negócio. Os **Ports** definem interfaces que são implementadas pelos **Adapters** (MongoDB e RabbitMQ). Quando o status de um pedido é atualizado, um evento é publicado no RabbitMQ, que pode ser consumido por outros microsserviços. A estratégia de escalabilidade inclui um **Load Balancer** na frente de múltiplas instâncias da aplicação, permitindo escalar horizontalmente.
+O diagrama acima representa a arquitetura hexagonal do serviço. A **API Layer** (FastAPI) recebe requisições HTTP e delega para a **Application Layer** (Use Cases), que orquestra operações. O **Domain Layer** contém as entidades e regras de negócio. Os **Ports** definem interfaces que são implementadas pelos **Adapters** (MongoDB e RabbitMQ). Quando o status de um pedido é atualizado, um evento é publicado no RabbitMQ, que pode ser consumido por outros microsserviços. A estratégia de escalabilidade inclui um **Load Balancer** na frente de múltiplas instâncias da aplicação, permitindo escalar horizontalmente.
 
-Para visualizar o diagrama:
-- Use um editor que suporte Mermaid (VS Code, GitHub, etc.)
-- Ou converta para imagem usando ferramentas online
+**Nota**: O diagrama também está disponível em `architecture.mmd` para edição e visualização em editores que suportam Mermaid.
 
 ## 🔍 Linting e Formatação
 
