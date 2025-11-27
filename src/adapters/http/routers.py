@@ -8,18 +8,11 @@ from src.adapters.http.dependencies import (
     get_get_order_use_case,
     get_update_order_status_use_case,
 )
-from src.adapters.http.schemas import (
-    CreateOrderRequest,
-    OrderResponse,
-    UpdateOrderStatusRequest,
-)
+from src.adapters.http.schemas import CreateOrderRequest, OrderResponse, UpdateOrderStatusRequest
 from src.application.use_cases.create_order import CreateOrderUseCase
 from src.application.use_cases.get_order import GetOrderUseCase
 from src.application.use_cases.update_order_status import UpdateOrderStatusUseCase
-from src.domain.exceptions import (
-    InvalidStatusTransitionError,
-    OrderNotFoundError,
-)
+from src.domain.exceptions import InvalidStatusTransitionError, OrderNotFoundError
 from src.domain.value_objects.order_id import OrderId
 from src.domain.value_objects.order_status import OrderStatus
 
