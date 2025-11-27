@@ -22,7 +22,6 @@ async def test_container_initialization(container):
         patch("src.app.container.AsyncIOMotorClient") as mock_mongo,
         patch("src.app.container.connect_robust") as mock_rabbitmq,
     ):
-
         mock_db = MagicMock()
         mock_mongo.return_value.__getitem__.return_value = mock_db
 
