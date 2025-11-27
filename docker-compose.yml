@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - MONGODB_URL=mongodb://mongo:27017
+      - MONGODB_DB_NAME=order_db
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - LOG_LEVEL=INFO
+    depends_on:
+      - mongo
+      - rabbitmq
+    volumes:
+      - ./src:/app/src
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    container_name: order-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=order_db
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: order-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  rabbitmq_data:
+
