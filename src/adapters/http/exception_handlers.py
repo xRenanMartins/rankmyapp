@@ -1,6 +1,5 @@
 """Exception handlers globais para a aplicação."""
 
-
 import structlog
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
