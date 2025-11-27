@@ -28,13 +28,26 @@ class MongoOrderRepository(OrderRepositoryPort):
             collection_name: Nome da coleção
         """
         self._collection = database[collection_name]
-        self._ensure_indexes()
+        # Nota: _ensure_indexes() é chamado assincronamente no container.initialize()
 
-    def _ensure_indexes(self) -> None:
-        """Cria índices necessários."""
-        # Índice único no ID do pedido
-        # Nota: Em produção, isso deveria ser feito via migration
-        pass
+    async def _ensure_indexes(self) -> None:
+        """Cria índices necessários para otimizar consultas."""
+        try:
+            # Índice único no ID do pedido
+            await self._collection.create_index("id", unique=True)
+
+            # Índices para consultas comuns
+            await self._collection.create_index("customer_id")
+            await self._collection.create_index("status")
+            await self._collection.create_index("created_at")
+
+            # Índice composto para consultas por cliente e status
+            await self._collection.create_index([("customer_id", 1), ("status", 1)])
+
+            logger.info("Índices MongoDB criados com sucesso")
+        except Exception as e:
+            logger.warning("Erro ao criar índices MongoDB", error=str(e))
+            # Não falha a inicialização se os índices já existirem
 
     async def save(self, order: Order) -> Order:
         """

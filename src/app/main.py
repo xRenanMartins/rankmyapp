@@ -6,13 +6,16 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.adapters.http.exception_handlers import register_exception_handlers
 from src.adapters.http.health import router as health_router
+from src.adapters.http.middleware import CorrelationIDMiddleware
 from src.adapters.http.routers import router as orders_router
 from src.app.container import container
 
 # Configurar logging estruturado
 structlog.configure(
     processors=[
+        structlog.contextvars.merge_contextvars,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.add_log_level,
         structlog.processors.JSONRenderer(),
@@ -31,7 +34,8 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS
+# Middlewares (ordem importa: primeiro adicionado é o último executado)
+app.add_middleware(CorrelationIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,6 +43,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers globais
+register_exception_handlers(app)
 
 # Routers
 app.include_router(health_router)

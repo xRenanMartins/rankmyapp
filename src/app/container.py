@@ -26,29 +26,55 @@ class Container:
 
     async def initialize(self) -> None:
         """Inicializa conexões e dependências."""
-        # MongoDB
-        self._mongo_client = AsyncIOMotorClient(settings.mongodb_url)
-        database = self._mongo_client[settings.mongodb_db_name]
-        self._repository = MongoOrderRepository(database)
+        try:
+            # MongoDB
+            logger.info("Conectando ao MongoDB", url=settings.mongodb_url)
+            self._mongo_client = AsyncIOMotorClient(settings.mongodb_url)
+            database = self._mongo_client[settings.mongodb_db_name]
+            self._repository = MongoOrderRepository(database)
 
-        # RabbitMQ
-        self._rabbitmq_connection = await connect_robust(settings.rabbitmq_url)
-        self._message_broker = RabbitMQPublisher(
-            self._rabbitmq_connection,
-            exchange_name=settings.rabbitmq_exchange,
-            routing_key=settings.rabbitmq_routing_key,
-        )
-        await self._message_broker.connect()
+            # Garantir que os índices sejam criados
+            await self._repository._ensure_indexes()
+            logger.info("MongoDB conectado e índices verificados")
+        except Exception as e:
+            logger.error("Erro ao conectar ao MongoDB", error=str(e), error_type=type(e).__name__)
+            raise
+
+        try:
+            # RabbitMQ
+            logger.info("Conectando ao RabbitMQ", url=settings.rabbitmq_url)
+            self._rabbitmq_connection = await connect_robust(settings.rabbitmq_url)
+            self._message_broker = RabbitMQPublisher(
+                self._rabbitmq_connection,
+                exchange_name=settings.rabbitmq_exchange,
+                routing_key=settings.rabbitmq_routing_key,
+            )
+            await self._message_broker.connect()
+            logger.info("RabbitMQ conectado")
+        except Exception as e:
+            logger.error("Erro ao conectar ao RabbitMQ", error=str(e), error_type=type(e).__name__)
+            # Fecha MongoDB se RabbitMQ falhar
+            if self._mongo_client:
+                self._mongo_client.close()
+            raise
 
         logger.info("Container inicializado com sucesso")
 
     async def shutdown(self) -> None:
         """Fecha conexões."""
-        if self._mongo_client:
-            self._mongo_client.close()
+        try:
+            if self._mongo_client:
+                self._mongo_client.close()
+                logger.info("Conexão MongoDB fechada")
+        except Exception as e:
+            logger.error("Erro ao fechar conexão MongoDB", error=str(e))
 
-        if self._rabbitmq_connection:
-            await self._rabbitmq_connection.close()
+        try:
+            if self._rabbitmq_connection:
+                await self._rabbitmq_connection.close()
+                logger.info("Conexão RabbitMQ fechada")
+        except Exception as e:
+            logger.error("Erro ao fechar conexão RabbitMQ", error=str(e))
 
         logger.info("Container finalizado")
 

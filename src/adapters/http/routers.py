@@ -1,7 +1,6 @@
 """Routers FastAPI para endpoints da API."""
 
-import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.adapters.http.dependencies import (
     get_create_order_use_case,
@@ -12,11 +11,8 @@ from src.adapters.http.schemas import CreateOrderRequest, OrderResponse, UpdateO
 from src.application.use_cases.create_order import CreateOrderUseCase
 from src.application.use_cases.get_order import GetOrderUseCase
 from src.application.use_cases.update_order_status import UpdateOrderStatusUseCase
-from src.domain.exceptions import InvalidStatusTransitionError, OrderNotFoundError
 from src.domain.value_objects.order_id import OrderId
 from src.domain.value_objects.order_status import OrderStatus
-
-logger = structlog.get_logger()
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -36,20 +32,12 @@ async def create_order(
     Returns:
         Pedido criado
     """
-    try:
-        order = await create_order_use_case.execute(
-            customer_id=request.customer_id,
-            items=request.items,
-            total_amount=request.total_amount,
-        )
-
-        return OrderResponse(**order.to_dict())
-    except Exception as e:
-        logger.error("Erro ao criar pedido", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao criar pedido",
-        ) from e
+    order = await create_order_use_case.execute(
+        customer_id=request.customer_id,
+        items=request.items,
+        total_amount=request.total_amount,
+    )
+    return OrderResponse(**order.to_dict())
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
@@ -67,20 +55,8 @@ async def get_order(
     Returns:
         Pedido encontrado
     """
-    try:
-        order = await get_order_use_case.execute(OrderId(order_id))
-        return OrderResponse(**order.to_dict())
-    except OrderNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from e
-    except Exception as e:
-        logger.error("Erro ao buscar pedido", order_id=order_id, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao buscar pedido",
-        ) from e
+    order = await get_order_use_case.execute(OrderId(order_id))
+    return OrderResponse(**order.to_dict())
 
 
 @router.patch("/{order_id}/status", response_model=OrderResponse)
@@ -102,30 +78,9 @@ async def update_order_status(
     Returns:
         Pedido atualizado
     """
-    try:
-        new_status = OrderStatus(request.status)
-        order = await update_order_status_use_case.execute(
-            OrderId(order_id),
-            new_status,
-        )
-        return OrderResponse(**order.to_dict())
-    except OrderNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from e
-    except (InvalidStatusTransitionError, ValueError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        ) from e
-    except Exception as e:
-        logger.error(
-            "Erro ao atualizar status do pedido",
-            order_id=order_id,
-            error=str(e),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao atualizar status do pedido",
-        ) from e
+    new_status = OrderStatus(request.status)
+    order = await update_order_status_use_case.execute(
+        OrderId(order_id),
+        new_status,
+    )
+    return OrderResponse(**order.to_dict())
