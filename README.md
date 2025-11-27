@@ -72,6 +72,9 @@ O projeto segue **Arquitetura Hexagonal (Ports & Adapters)**, separando o códig
 │       ├── config.py       # Configurações
 │       └── container.py    # Dependency Injection
 ├── tests/                   # Testes unitários
+├── .github/                 # Configuração do GitHub
+│   └── workflows/          # GitHub Actions (CI/CD)
+│       └── ci.yml          # Pipeline de CI/CD
 ├── docker-compose.yml       # Orquestração de serviços
 ├── Dockerfile              # Imagem da aplicação
 ├── pyproject.toml          # Configuração do projeto
@@ -286,13 +289,20 @@ ruff check src/ tests/
 isort src/ tests/
 ```
 
-### Pré-commit
+### CI/CD
 
-O projeto inclui configuração de pré-commit. Para instalar:
+O projeto utiliza **GitHub Actions** para CI/CD, executando automaticamente:
 
-```bash
-pre-commit install
-```
+- ✅ **Verificação de formatação** (Black)
+- ✅ **Verificação de ordenação de imports** (isort)
+- ✅ **Linting** (Ruff)
+- ✅ **Testes** com cobertura mínima de 60%
+
+O pipeline é executado automaticamente em:
+- Push para branches `main` e `develop`
+- Pull requests para `main` e `develop`
+
+O CI/CD **não utiliza pre-commit**, executando os checks diretamente no pipeline.
 
 ## 📝 Variáveis de Ambiente
 
