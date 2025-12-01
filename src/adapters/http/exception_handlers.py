@@ -125,3 +125,5 @@ def register_exception_handlers(app) -> None:
     app.add_exception_handler(InvalidStatusTransitionError, invalid_status_transition_handler)
     app.add_exception_handler(ValueError, value_error_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
+
+
