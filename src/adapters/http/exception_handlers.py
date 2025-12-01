@@ -127,3 +127,4 @@ def register_exception_handlers(app) -> None:
     app.add_exception_handler(Exception, generic_exception_handler)
 
 
+
